@@ -55,7 +55,7 @@ let processKey (e: Editor) (k: ConsoleKey) =
         | ConsoleKey.Enter ->
             { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.lines); cpos = (0, snd e.cpos + 1) }
         | ConsoleKey.Backspace ->
-            { e with lines = List.mapi (fun (i: int) (line: StringBuilder) -> if i = snd e.cpos (* && fst e.cpos > 0 *) then line.Insert (fst e.cpos, "\b") else line) e.lines; cpos = (* if fst e.cpos > 0 then *) (fst e.cpos - 1, snd e.cpos) (* else e.cpos *) }
+            { e with lines = List.mapi (fun (i: int) (line: StringBuilder) -> if i = snd e.cpos then line.Insert (fst e.cpos, "\b") else line) e.lines; cpos = (fst e.cpos - 1, snd e.cpos) }
         | ConsoleKey.Tab ->
             { e with lines = List.mapi (fun (i: int) (line: StringBuilder) -> if i = snd e.cpos then line.Insert (fst e.cpos, "    ") else line) e.lines; cpos = (fst e.cpos + 4, snd e.cpos) }
         | _ ->
