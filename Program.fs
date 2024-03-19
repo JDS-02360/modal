@@ -7,8 +7,13 @@ type Editor = {
     lines: list<StringBuilder>
 }
 
-let zeroesBeforeNumber (e: Editor) (i: int) =
-    i.ToString ()
+let rec zeroesBeforeNumber (e: Editor) (istr: string) =
+    if istr.Length < ((e.lines.Length) - 1).ToString().Length then
+        let istr = istr.Insert (0, "0")
+
+        zeroesBeforeNumber e istr
+    else
+        istr
 
 let move (e: Editor) (cpos: int * int) =
     if fst cpos > 0 && fst cpos < e.lines[snd e.cpos].Length then
@@ -23,7 +28,7 @@ let move (e: Editor) (cpos: int * int) =
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
 
-    printfn $"{ zeroesBeforeNumber (e) (i + 1) } { e.lines[i] }"
+    printfn $"{ zeroesBeforeNumber (e) ((i + 1).ToString ()) } { e.lines[i] }"
 
     if i < e.lines.Length - 1 then render (e) (i + 1)
     else ()
@@ -42,7 +47,7 @@ let processKey (e: Editor) (k: ConsoleKey) =
         | ConsoleKey.I ->
             { e with mode = "insert" }
         | ConsoleKey.Enter ->
-            { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder("")) (e.lines); cpos = (0, snd e.cpos + 1) }
+            { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.lines); cpos = (0, snd e.cpos + 1) }
         | _ -> e
     elif e.mode = "insert" then
         match k with
@@ -76,11 +81,14 @@ let main argv =
             StringBuilder().Append "let mutable i: int = 0"
             StringBuilder().Append ""
             StringBuilder().Append "[<EntryPoint>]"
-            StringBuilder().Append "let main argv ="
+            StringBuilder().Append "let main argv: string ="
+            StringBuilder().Append "    let str: string = \"returned string\""
+            StringBuilder().Append ""
             StringBuilder().Append "    printfn \"Hello world\""
             StringBuilder().Append ""
             StringBuilder().Append "    i <- i + 1"
             StringBuilder().Append "    printfn \"i is a mutable value\""
+            StringBuilder().Append "    str"
         ]
     }
 
