@@ -33,9 +33,9 @@ let rec render (e: Editor) (i: int) =
     if i < e.lines.Length - 1 then render (e) (i + 1)
     else ()
 
-let processKey (e: Editor) (k: ConsoleKey) =
+let processKey (e: Editor) (k: ConsoleKeyInfo) =
     if e.mode = "normal" then
-        match k with
+        match k.Key with
         | ConsoleKey.H -> move (e) (-1, 0)
         | ConsoleKey.J -> move (e) (0, -1)
         | ConsoleKey.K -> move (e) (0, 1)
@@ -50,7 +50,7 @@ let processKey (e: Editor) (k: ConsoleKey) =
             { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.lines); cpos = (0, snd e.cpos + 1) }
         | _ -> e
     elif e.mode = "insert" then
-        match k with
+        match k.Key with
         | ConsoleKey.LeftArrow -> move (e) (-1, 0)
         | ConsoleKey.DownArrow -> move (e) (0, -1)
         | ConsoleKey.UpArrow -> move (e) (0, 1)
@@ -60,11 +60,20 @@ let processKey (e: Editor) (k: ConsoleKey) =
         | ConsoleKey.Enter ->
             { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.lines); cpos = (0, snd e.cpos + 1) }
         | ConsoleKey.Backspace ->
-            { e with lines = List.mapi (fun (i: int) (line: StringBuilder) -> if i = snd e.cpos then line.Insert (fst e.cpos, "\b") else line) e.lines; cpos = (fst e.cpos - 1, snd e.cpos) }
+            let line = e.lines[snd e.cpos]
+            line.Insert(fst e.cpos, "\b") |> ignore
+
+            move (e) (-1, 0)
         | ConsoleKey.Tab ->
-            { e with lines = List.mapi (fun (i: int) (line: StringBuilder) -> if i = snd e.cpos then line.Insert (fst e.cpos, "    ") else line) e.lines; cpos = (fst e.cpos + 4, snd e.cpos) }
+            let line = e.lines[snd e.cpos]
+            line.Insert (fst e.cpos, "    ") |> ignore
+
+            move (e) (4, 0)
         | _ ->
-            { e with lines = List.mapi (fun (i: int) (line: StringBuilder) -> if i = snd e.cpos then line.Insert (fst e.cpos, k) else line) e.lines; cpos = (fst e.cpos + 1, snd e.cpos) }
+            let line = e.lines[snd e.cpos]
+            line.Insert(fst e.cpos, k.KeyChar.ToString()) |> ignore
+
+            move (e) (1, 0)
     else e
 
 [<EntryPoint>]
@@ -95,7 +104,7 @@ let main argv =
     render e 0
 
     let rec loop (e: Editor) =
-        let k = (Console.ReadKey true).Key
+        let k = (Console.ReadKey true)
 
         let e = processKey e k
         render e 0
