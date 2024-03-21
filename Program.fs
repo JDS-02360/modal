@@ -11,16 +11,6 @@ let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
     let removedL = List.removeAt i l
     List.insertAt i s removedL
 
-let move (e: Editor) (cpos: int * int) =
-    if fst cpos > 0 && fst cpos < e.lines[snd e.cpos].Length then
-        { e with cpos = (fst e.cpos + fst cpos, snd e.cpos) }
-    elif snd cpos > 0 && snd cpos < e.lines.Length then
-        if fst cpos > e.lines[snd e.cpos + 1].Length then
-            { e with cpos = (0, snd e.cpos + snd cpos) }
-        else
-            { e with cpos = (fst e.cpos, snd e.cpos + snd cpos) }
-    else e
-
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
 
@@ -33,21 +23,49 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
     if e.mode = "normal" then
         match k.Key with
         | ConsoleKey.H ->
-            move (e) (-1, 0)
+            if fst e.cpos > 0 then
+                { e with cpos = (fst e.cpos - 1, snd e.cpos) }
+            else e
         | ConsoleKey.J ->
-            move (e) (0, -1)
+            if snd e.cpos < e.lines.Length then
+                if fst e.cpos > e.lines[snd e.cpos + 1].Length then
+                    { e with cpos = (0, snd e.cpos + 1) }
+                else
+                    { e with cpos = (fst e.cpos, snd e.cpos + 1) }
+            else e
         | ConsoleKey.K ->
-            move (e) (0, 1)
+            if snd e.cpos > 0 then
+                if fst e.cpos > e.lines[snd e.cpos - 1].Length then
+                    { e with cpos = (0, snd e.cpos - 1) }
+                else
+                    { e with cpos = (fst e.cpos, snd e.cpos - 1) }
+            else e
         | ConsoleKey.L ->
-            move (e) (1, 0)
+            if fst e.cpos < e.lines[snd e.cpos].Length then
+                { e with cpos = (fst e.cpos + 1, snd e.cpos) }
+            else e
         | ConsoleKey.LeftArrow ->
-            move (e) (-1, 0)
+            if fst e.cpos > 0 then
+                { e with cpos = (fst e.cpos - 1, snd e.cpos) }
+            else e
         | ConsoleKey.DownArrow ->
-            move (e) (0, -1)
+            if snd e.cpos < e.lines.Length then
+                if fst e.cpos > e.lines[snd e.cpos + 1].Length then
+                    { e with cpos = (0, snd e.cpos + 1) }
+                else
+                    { e with cpos = (fst e.cpos, snd e.cpos + 1) }
+            else e
         | ConsoleKey.UpArrow ->
-            move (e) (0, 1)
+            if snd e.cpos > 0 then
+                if fst e.cpos > e.lines[snd e.cpos - 1].Length then
+                    { e with cpos = (0, snd e.cpos - 1) }
+                else
+                { e with cpos = (fst e.cpos, snd e.cpos - 1) }
+            else e
         | ConsoleKey.RightArrow ->
-            move (e) (1, 0)
+            if fst e.cpos < e.lines[snd e.cpos].Length then
+                { e with cpos = (fst e.cpos + 1, snd e.cpos) }
+            else e
         | ConsoleKey.I ->
             { e with mode = "insert" }
         | ConsoleKey.Enter ->
@@ -56,13 +74,27 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
     elif e.mode = "insert" then
         match k.Key with
         | ConsoleKey.LeftArrow ->
-            move (e) (-1, 0)
+            if fst e.cpos > 0 then
+                { e with cpos = (fst e.cpos - 1, snd e.cpos) }
+            else e
         | ConsoleKey.DownArrow ->
-            move (e) (0, -1)
+            if snd e.cpos < e.lines.Length then
+                if fst e.cpos > e.lines[snd e.cpos + 1].Length then
+                    { e with cpos = (0, snd e.cpos + 1) }
+                else
+                    { e with cpos = (fst e.cpos, snd e.cpos + 1) }
+            else e
         | ConsoleKey.UpArrow ->
-            move (e) (0, 1)
+            if snd e.cpos > 0 then
+                if fst e.cpos > e.lines[snd e.cpos - 1].Length then
+                    { e with cpos = (0, snd e.cpos - 1) }
+                else
+                    { e with cpos = (fst e.cpos, snd e.cpos - 1) }
+            else e
         | ConsoleKey.RightArrow ->
-            move (e) (1, 0)
+            if fst e.cpos < e.lines[snd e.cpos].Length then
+                { e with cpos = (fst e.cpos + 1, snd e.cpos) }
+            else e
         | ConsoleKey.Escape ->
             { e with mode = "normal" }
         | ConsoleKey.Enter ->
