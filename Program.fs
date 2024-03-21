@@ -8,8 +8,8 @@ type Editor = {
 }
 
 let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
-    let removedL = List.removeAt i l
-    List.insertAt i s removedL
+    let l = List.removeAt i l
+    List.insertAt i s l
 
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
@@ -27,7 +27,7 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
                 { e with cpos = (fst e.cpos - 1, snd e.cpos) }
             else e
         | ConsoleKey.J ->
-            if snd e.cpos < e.lines.Length then
+            if snd e.cpos < e.lines.Length - 1 then
                 if fst e.cpos > e.lines[snd e.cpos + 1].Length then
                     { e with cpos = (0, snd e.cpos + 1) }
                 else
@@ -49,7 +49,7 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
                 { e with cpos = (fst e.cpos - 1, snd e.cpos) }
             else e
         | ConsoleKey.DownArrow ->
-            if snd e.cpos < e.lines.Length then
+            if snd e.cpos < e.lines.Length - 1 then
                 if fst e.cpos > e.lines[snd e.cpos + 1].Length then
                     { e with cpos = (0, snd e.cpos + 1) }
                 else
@@ -78,7 +78,7 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
                 { e with cpos = (fst e.cpos - 1, snd e.cpos) }
             else e
         | ConsoleKey.DownArrow ->
-            if snd e.cpos < e.lines.Length then
+            if snd e.cpos < e.lines.Length - 1 then
                 if fst e.cpos > e.lines[snd e.cpos + 1].Length then
                     { e with cpos = (0, snd e.cpos + 1) }
                 else
@@ -105,25 +105,27 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
             if fst e.cpos > 0 then
                 line.Remove((fst e.cpos) - 1, 1) |> ignore
 
-                { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = ((fst e.cpos) - 1, snd e.cpos) }
-            else e
+                { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = (fst e.cpos - 1, snd e.cpos) }
+            elif fst e.cpos = 0 && snd e.cpos = 0 then e
+            else
+                { e with lines = List.removeAt (snd e.cpos) e.lines; cpos = (e.lines[snd e.cpos - 1].Length, snd e.cpos - 1) }
         | ConsoleKey.Tab ->
             let line = e.lines[snd e.cpos]
             line.Insert(fst e.cpos, "    ") |> ignore
 
-            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = ((fst e.cpos) + 4, snd e.cpos) }
+            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = (fst e.cpos + 4, snd e.cpos) }
         | _ ->
             let line = e.lines[snd e.cpos]
             line.Insert(fst e.cpos, k.KeyChar.ToString()) |> ignore
 
-            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = ((fst e.cpos) + 1, snd e.cpos) }
+            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = (fst e.cpos + 1, snd e.cpos) }
     else e
 
 [<EntryPoint>]
 let main argv =
     Console.CursorVisible <- false
 
-    let mutable e: Editor = {
+    let e: Editor = {
         cpos = (0, 0)
         mode = "normal"
         lines = [
@@ -149,10 +151,10 @@ let main argv =
     let rec loop (e: Editor) =
         let k = (Console.ReadKey true)
 
-        let processedE = processKey e k
-        render processedE 0
+        let e = processKey e k
+        render e 0
         
-        loop processedE
+        loop e
 
     loop e
 
