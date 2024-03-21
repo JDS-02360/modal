@@ -7,13 +7,9 @@ type Editor = {
     lines: list<StringBuilder>
 }
 
-let rec zeroesBeforeNumber (e: Editor) (istr: string) =
-    if istr.Length < ((e.lines.Length) - 1).ToString().Length then
-        let istr = istr.Insert (0, "0")
-
-        zeroesBeforeNumber e istr
-    else
-        istr
+let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
+    let removedL = List.removeAt i l
+    List.insertAt i s removedL
 
 let move (e: Editor) (cpos: int * int) =
     if fst cpos > 0 && fst cpos < e.lines[snd e.cpos].Length then
@@ -28,7 +24,7 @@ let move (e: Editor) (cpos: int * int) =
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
 
-    printfn $"{ zeroesBeforeNumber (e) ((i + 1).ToString ()) } { e.lines[i] }"
+    printfn $"{ e.lines[i] }"
 
     if i < e.lines.Length - 1 then render (e) (i + 1)
     else ()
@@ -36,14 +32,22 @@ let rec render (e: Editor) (i: int) =
 let processKey (e: Editor) (k: ConsoleKeyInfo) =
     if e.mode = "normal" then
         match k.Key with
-        | ConsoleKey.H -> move (e) (-1, 0)
-        | ConsoleKey.J -> move (e) (0, -1)
-        | ConsoleKey.K -> move (e) (0, 1)
-        | ConsoleKey.L -> move (e) (1, 0)
-        | ConsoleKey.LeftArrow -> move (e) (-1, 0)
-        | ConsoleKey.DownArrow -> move (e) (0, -1)
-        | ConsoleKey.UpArrow -> move (e) (0, 1)
-        | ConsoleKey.RightArrow -> move (e) (1, 0)
+        | ConsoleKey.H ->
+            move (e) (-1, 0)
+        | ConsoleKey.J ->
+            move (e) (0, -1)
+        | ConsoleKey.K ->
+            move (e) (0, 1)
+        | ConsoleKey.L ->
+            move (e) (1, 0)
+        | ConsoleKey.LeftArrow ->
+            move (e) (-1, 0)
+        | ConsoleKey.DownArrow ->
+            move (e) (0, -1)
+        | ConsoleKey.UpArrow ->
+            move (e) (0, 1)
+        | ConsoleKey.RightArrow ->
+            move (e) (1, 0)
         | ConsoleKey.I ->
             { e with mode = "insert" }
         | ConsoleKey.Enter ->
@@ -51,29 +55,36 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
         | _ -> e
     elif e.mode = "insert" then
         match k.Key with
-        | ConsoleKey.LeftArrow -> move (e) (-1, 0)
-        | ConsoleKey.DownArrow -> move (e) (0, -1)
-        | ConsoleKey.UpArrow -> move (e) (0, 1)
-        | ConsoleKey.RightArrow -> move (e) (1, 0)
+        | ConsoleKey.LeftArrow ->
+            move (e) (-1, 0)
+        | ConsoleKey.DownArrow ->
+            move (e) (0, -1)
+        | ConsoleKey.UpArrow ->
+            move (e) (0, 1)
+        | ConsoleKey.RightArrow ->
+            move (e) (1, 0)
         | ConsoleKey.Escape ->
             { e with mode = "normal" }
         | ConsoleKey.Enter ->
             { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.lines); cpos = (0, snd e.cpos + 1) }
         | ConsoleKey.Backspace ->
             let line = e.lines[snd e.cpos]
-            line.Insert(fst e.cpos, "\b") |> ignore
 
-            move (e) (-1, 0)
+            if fst e.cpos > 0 then
+                line.Remove((fst e.cpos) - 1, 1) |> ignore
+
+                { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = ((fst e.cpos) - 1, snd e.cpos) }
+            else e
         | ConsoleKey.Tab ->
             let line = e.lines[snd e.cpos]
-            line.Insert (fst e.cpos, "    ") |> ignore
+            line.Insert(fst e.cpos, "    ") |> ignore
 
-            move (e) (4, 0)
+            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = ((fst e.cpos) + 4, snd e.cpos) }
         | _ ->
             let line = e.lines[snd e.cpos]
             line.Insert(fst e.cpos, k.KeyChar.ToString()) |> ignore
 
-            move (e) (1, 0)
+            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = ((fst e.cpos) + 1, snd e.cpos) }
     else e
 
 [<EntryPoint>]
@@ -106,10 +117,10 @@ let main argv =
     let rec loop (e: Editor) =
         let k = (Console.ReadKey true)
 
-        let e = processKey e k
-        render e 0
+        let processedE = processKey e k
+        render processedE 0
         
-        loop e
+        loop processedE
 
     loop e
 
