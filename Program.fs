@@ -7,14 +7,22 @@ type Editor = {
     lines: list<StringBuilder>
 }
 
+let rec zeroesBeforeNumber (e: Editor) (istr: string) =
+    if istr.Length < ((e.lines.Length) - 1).ToString().Length then
+        let istr = istr.Insert (0, " ")
+
+        zeroesBeforeNumber e istr
+    else
+        istr
+
 let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
     let l = List.removeAt i l
     List.insertAt i s l
 
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
-
-    printfn $"{ e.lines[i] }"
+    
+    printfn $"{ zeroesBeforeNumber e ((i + 1).ToString()) } { e.lines[i] }"
 
     if i < e.lines.Length - 1 then render (e) (i + 1)
     else ()
@@ -157,6 +165,8 @@ let main argv =
         loop e
 
     loop e
+
+    Console.Clear ()
 
     Console.CursorVisible <- true
 
