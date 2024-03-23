@@ -1,5 +1,6 @@
 ﻿open System
 open System.Text
+open System.IO
 
 type Editor = {
     cpos: int * int
@@ -8,13 +9,18 @@ type Editor = {
     lines: list<StringBuilder>
 }
 
-let checkViewport (e: Editor) =
+let loadFile (s: string) =
+    File.ReadLines s
+    |> Seq.map (fun (line: string) -> new StringBuilder (line))
+    |> Seq.toList
+
+let changeViewport (e: Editor) =
     let buffer = 4
 
     if snd e.cpos < e.viewport + buffer then
         { e with viewport = max 0 (snd e.cpos - buffer) }
     elif snd e.cpos > e.viewport + Console.WindowHeight - 2 - buffer then
-        { e with viewport = snd e.cpos - Console.WindowHeight + 1 + buffer }
+        { e with viewport = snd e.cpos - Console.WindowHeight + 2 + buffer }
     else e
 
 let rec zeroesBeforeNumber (e: Editor) (istr: string) =
@@ -38,9 +44,9 @@ let rec render (e: Editor) (i: int) =
             let emptyStr = zeroesBeforeNumber e emptyStr
             let emptyStr = emptyStr.Remove (emptyStr.Length - 1)
 
-            printfn $">{ emptyStr } { e.lines[i] }"
+            printfn $">{ emptyStr } { (e.lines[i]).ToString() }"
         else
-            printfn $"{ zeroesBeforeNumber e ((i + 1).ToString()) } { e.lines[i] }"
+            printfn $"{ zeroesBeforeNumber e ((i + 1).ToString()) } { (e.lines[i]).ToString() }"
 
     if i < e.lines.Length - 1 then render (e) (i + 1)
     else ()
@@ -149,45 +155,34 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
 
 [<EntryPoint>]
 let main argv =
-    Console.CursorVisible <- false
+    if argv.Length = 0 then
+        printfn "Please provide a file to edit"
+    else
+        Console.CursorVisible <- false
 
-    let e: Editor = {
-        cpos = (0, 0)
-        mode = "normal"
-        lines = [
-            // Placeholder for loaded file or written text
-            StringBuilder().Append "open System"
-            StringBuilder().Append ""
-            StringBuilder().Append "let mutable i: int = 0"
-            StringBuilder().Append ""
-            StringBuilder().Append "[<EntryPoint>]"
-            StringBuilder().Append "let main argv: string ="
-            StringBuilder().Append "    let str: string = \"returned string\""
-            StringBuilder().Append ""
-            StringBuilder().Append "    printfn \"Hello world\""
-            StringBuilder().Append ""
-            StringBuilder().Append "    i <- i + 1"
-            StringBuilder().Append "    printfn \"i is a mutable value\""
-            StringBuilder().Append "    str"
-        ]
-        viewport = 0
-    }
-
-    render e 0
-
-    let rec loop (e: Editor) =
-        let k = (Console.ReadKey true)
-        let e = processKey e k
-        let e = checkViewport e
+        let path = argv[0]
+        let e: Editor = {
+            cpos = (0, 0)
+            mode = "normal"
+            lines = loadFile path
+            viewport = 0
+        }
 
         render e 0
+
+        let rec loop (e: Editor) =
+            let k = (Console.ReadKey true)
+            let e = processKey e k
+            let e = changeViewport e
+
+            render e 0
         
+            loop e
+
         loop e
 
-    loop e
+        Console.Clear ()
 
-    Console.Clear ()
-
-    Console.CursorVisible <- true
+        Console.CursorVisible <- true
 
     0
