@@ -3,9 +3,19 @@ open System.Text
 
 type Editor = {
     cpos: int * int
+    viewport: int
     mode: string
     lines: list<StringBuilder>
 }
+
+let checkViewport (e: Editor) =
+    let buffer = 4
+
+    if snd e.cpos < e.viewport + buffer then
+        { e with viewport = max 0 (snd e.cpos - buffer) }
+    elif snd e.cpos > e.viewport + Console.WindowHeight - 2 - buffer then
+        { e with viewport = snd e.cpos - Console.WindowHeight + 1 + buffer }
+    else e
 
 let rec zeroesBeforeNumber (e: Editor) (istr: string) =
     if istr.Length < ((e.lines.Length) - 1).ToString().Length then
@@ -22,7 +32,15 @@ let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
     
-    printfn $"{ zeroesBeforeNumber e ((i + 1).ToString()) } { e.lines[i] }"
+    if i >= e.viewport && i <= e.viewport + Console.WindowHeight - 2 then
+        if i = snd e.cpos then
+            let emptyStr = ""
+            let emptyStr = zeroesBeforeNumber e emptyStr
+            let emptyStr = emptyStr.Remove (emptyStr.Length - 1)
+
+            printfn $">{ emptyStr } { e.lines[i] }"
+        else
+            printfn $"{ zeroesBeforeNumber e ((i + 1).ToString()) } { e.lines[i] }"
 
     if i < e.lines.Length - 1 then render (e) (i + 1)
     else ()
@@ -152,14 +170,16 @@ let main argv =
             StringBuilder().Append "    printfn \"i is a mutable value\""
             StringBuilder().Append "    str"
         ]
+        viewport = 0
     }
 
     render e 0
 
     let rec loop (e: Editor) =
         let k = (Console.ReadKey true)
-
         let e = processKey e k
+        let e = checkViewport e
+
         render e 0
         
         loop e
