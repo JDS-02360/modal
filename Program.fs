@@ -9,10 +9,27 @@ type Editor = {
     lines: list<StringBuilder>
 }
 
+let quit =
+    // Placeholder for quitting the program
+    ()
+
+let saveFile (e: Editor) (s: string) =
+    use sw = new StreamWriter (s)
+
+    e.lines
+    |> List.iter (fun (sb: StringBuilder) -> sw.WriteLine (sb))
+
 let loadFile (s: string) =
-    File.ReadLines s
-    |> Seq.map (fun (line: string) -> new StringBuilder (line))
-    |> Seq.toList
+    let fi = new FileInfo (s)
+
+    if fi.Length <> 0L then
+        File.ReadLines s
+        |> Seq.toList
+        |> List.map (fun (line: string) -> new StringBuilder (line))
+    else
+        let l = [StringBuilder ""]
+
+        l
 
 let changeViewport (e: Editor) =
     let buffer = 4
@@ -51,7 +68,7 @@ let rec render (e: Editor) (i: int) =
     if i < e.lines.Length - 1 then render (e) (i + 1)
     else ()
 
-let processKey (e: Editor) (k: ConsoleKeyInfo) =
+let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
     if e.mode = "normal" then
         match k.Key with
         | ConsoleKey.H ->
@@ -98,6 +115,15 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) =
             if fst e.cpos < e.lines[snd e.cpos].Length then
                 { e with cpos = (fst e.cpos + 1, snd e.cpos) }
             else e
+        // Saving and quitting. Work in progress
+        | ConsoleKey.W ->
+            saveFile e p
+
+            e
+        | ConsoleKey.Q ->
+            quit
+
+            e
         | ConsoleKey.I ->
             { e with mode = "insert" }
         | ConsoleKey.Enter ->
@@ -167,14 +193,14 @@ let main argv =
             lines = loadFile path
             viewport = 0
         }
-
+        
         render e 0
 
         let rec loop (e: Editor) =
             let k = (Console.ReadKey true)
-            let e = processKey e k
+            let e = processKey e k path
             let e = changeViewport e
-
+            
             render e 0
         
             loop e
