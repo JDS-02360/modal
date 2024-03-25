@@ -9,11 +9,12 @@ type Editor = {
     lines: list<StringBuilder>
 }
 
-let quit =
-    // Placeholder for quitting the program
-    ()
+let quit () =
+    // TODO: ask user if they want to quit the program
+    Environment.Exit 0
 
 let saveFile (e: Editor) (s: string) =
+    // TODO: ask user if they want to quit the program
     use sw = new StreamWriter (s)
 
     e.lines
@@ -27,7 +28,9 @@ let loadFile (s: string) =
         |> Seq.toList
         |> List.map (fun (line: string) -> new StringBuilder (line))
     else
-        let l = [StringBuilder ""]
+        let l = [
+            StringBuilder ""
+        ]
 
         l
 
@@ -36,15 +39,15 @@ let changeViewport (e: Editor) =
 
     if snd e.cpos < e.viewport + buffer then
         { e with viewport = max 0 (snd e.cpos - buffer) }
-    elif snd e.cpos > e.viewport + Console.WindowHeight - 2 - buffer then
-        { e with viewport = snd e.cpos - Console.WindowHeight + 2 + buffer }
+    elif snd e.cpos > e.viewport + Console.WindowHeight - 4 - buffer then
+        { e with viewport = snd e.cpos - Console.WindowHeight + 4 + buffer }
     else e
 
-let rec zeroesBeforeNumber (e: Editor) (istr: string) =
+let rec spacesBeforeNumber (e: Editor) (istr: string) =
     if istr.Length < ((e.lines.Length) - 1).ToString().Length then
         let istr = istr.Insert (0, " ")
 
-        zeroesBeforeNumber e istr
+        spacesBeforeNumber e istr
     else
         istr
 
@@ -55,17 +58,18 @@ let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
     
-    if i >= e.viewport && i <= e.viewport + Console.WindowHeight - 2 then
+    if i >= e.viewport && i <= e.viewport + Console.WindowHeight - 4 then
         if i = snd e.cpos then
             let emptyStr = ""
-            let emptyStr = zeroesBeforeNumber e emptyStr
+            let emptyStr = spacesBeforeNumber e emptyStr
             let emptyStr = emptyStr.Remove (emptyStr.Length - 1)
 
             printfn $">{ emptyStr } { (e.lines[i]).ToString() }"
         else
-            printfn $"{ zeroesBeforeNumber e ((i + 1).ToString()) } { (e.lines[i]).ToString() }"
+            printfn $"{ spacesBeforeNumber e ((i + 1).ToString()) } { (e.lines[i]).ToString() }"
 
-    if i < e.lines.Length - 1 then render (e) (i + 1)
+    if i < e.lines.Length - 1 then
+        render (e) (i + 1)
     else ()
 
 let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
@@ -121,7 +125,7 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
 
             e
         | ConsoleKey.Q ->
-            quit
+            quit () |> ignore
 
             e
         | ConsoleKey.I ->
