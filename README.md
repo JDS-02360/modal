@@ -21,4 +21,3 @@ This will provide instructions on how to use the editor. Alternatively use the f
 ```
 dotnet run 
 ```
-`
