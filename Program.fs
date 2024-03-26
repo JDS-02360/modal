@@ -11,6 +11,8 @@ type Editor = {
 
 let quit () =
     // TODO: ask user if they want to quit the program
+    Console.Clear ()
+
     Environment.Exit 0
 
 let saveFile (e: Editor) (s: string) =
@@ -39,8 +41,8 @@ let changeViewport (e: Editor) =
 
     if snd e.cpos < e.viewport + buffer then
         { e with viewport = max 0 (snd e.cpos - buffer) }
-    elif snd e.cpos > e.viewport + Console.WindowHeight - 4 - buffer then
-        { e with viewport = snd e.cpos - Console.WindowHeight + 4 + buffer }
+    elif snd e.cpos > e.viewport + Console.WindowHeight - 2 - buffer then
+        { e with viewport = snd e.cpos - Console.WindowHeight + 2 + buffer }
     else e
 
 let rec spacesBeforeNumber (e: Editor) (istr: string) =
@@ -58,7 +60,7 @@ let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
 let rec render (e: Editor) (i: int) =
     if i = 0 then Console.Clear ()
     
-    if i >= e.viewport && i <= e.viewport + Console.WindowHeight - 4 then
+    if i >= e.viewport && i <= e.viewport + Console.WindowHeight - 2 then
         if i = snd e.cpos then
             let emptyStr = ""
             let emptyStr = spacesBeforeNumber e emptyStr
@@ -187,6 +189,16 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
 let main argv =
     if argv.Length = 0 then
         printfn "Please provide a file to edit"
+    elif argv[0] = "-h" then
+        printfn "Usage: modal path/to/file.txt"
+
+        printf "\n"
+
+        printfn "HJKL or the arrow keys to move the cursor"
+        printfn "W to save"
+        printfn "Q to quit"
+        printfn "I to enter insert mode"
+        printfn "Escape to exit insert mode"
     else
         Console.CursorVisible <- false
 
@@ -201,7 +213,7 @@ let main argv =
         render e 0
 
         let rec loop (e: Editor) =
-            let k = (Console.ReadKey true)
+            let k = Console.ReadKey true
             let e = processKey e k path
             let e = changeViewport e
             
