@@ -6,7 +6,7 @@ type Editor = {
     cpos: int * int
     viewport: int
     mode: string
-    visible: list<StringBuilder>
+    lines: list<StringBuilder>
     status: string
 }
 
@@ -19,8 +19,8 @@ let quit () =
 let saveFile (e: Editor) (s: string) =
     // TODO: ask user if they want to quit the program
     use sw = new StreamWriter (s)
-
-    e.visible
+    
+    e.lines
     |> List.iter (fun (sb: StringBuilder) -> sw.WriteLine (sb))
 
 let loadFile (s: string) =
@@ -47,7 +47,7 @@ let changeViewport (e: Editor) =
     else e
 
 let rec spacesBeforeNumber (e: Editor) (istr: string) =
-    if istr.Length < ((e.visible.Length) - 1).ToString().Length then
+    if istr.Length < ((e.lines.Length) - 1).ToString().Length then
         let istr = istr.Insert (0, " ")
 
         spacesBeforeNumber e istr
@@ -59,19 +59,20 @@ let listReplaceAt (i: int) (s: StringBuilder) (l: list<StringBuilder>) =
     List.insertAt i s l
 
 let rec render (e: Editor) (i: int) (p: string) =
-    if i = 0 then Console.Clear ()
-    
-    if i >= e.viewport && i <= e.viewport + Console.WindowHeight - 4 then
+    if i = 0 then
+        Console.Clear ()
+
+    if i >= e.viewport && i <= e.viewport + Console.WindowHeight - 3 then
         if i = snd e.cpos then
             let emptyStr = ""
             let emptyStr = spacesBeforeNumber e emptyStr
             let emptyStr = emptyStr.Remove (emptyStr.Length - 1)
 
-            printfn $">{ emptyStr } { (e.visible[i]).ToString() }"
+            printfn $">{ emptyStr } { (e.lines[i]).ToString() }"
         else
-            printfn $"{ spacesBeforeNumber e ((i + 1).ToString()) } { (e.visible[i]).ToString() }"
+            printfn $"{ spacesBeforeNumber e ((i + 1).ToString()) } { (e.lines[i]).ToString() }"
 
-    if i < e.visible.Length - 1 then
+    if i < e.lines.Length - 1 then
         render (e) (i + 1) (p)
     else
         Console.SetCursorPosition (0, Console.WindowHeight - 1)
@@ -85,21 +86,21 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
                 { e with cpos = (fst e.cpos - 1, snd e.cpos) }
             else e
         | ConsoleKey.J ->
-            if snd e.cpos < e.visible.Length - 1 then
-                if fst e.cpos > e.visible[snd e.cpos + 1].Length then
+            if snd e.cpos < e.lines.Length - 1 then
+                if fst e.cpos > e.lines[snd e.cpos + 1].Length then
                     { e with cpos = (0, snd e.cpos + 1) }
                 else
                     { e with cpos = (fst e.cpos, snd e.cpos + 1) }
             else e
         | ConsoleKey.K ->
             if snd e.cpos > 0 then
-                if fst e.cpos > e.visible[snd e.cpos - 1].Length then
+                if fst e.cpos > e.lines[snd e.cpos - 1].Length then
                     { e with cpos = (0, snd e.cpos - 1) }
                 else
                     { e with cpos = (fst e.cpos, snd e.cpos - 1) }
             else e
         | ConsoleKey.L ->
-            if fst e.cpos < e.visible[snd e.cpos].Length then
+            if fst e.cpos < e.lines[snd e.cpos].Length then
                 { e with cpos = (fst e.cpos + 1, snd e.cpos) }
             else e
         | ConsoleKey.LeftArrow ->
@@ -107,21 +108,21 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
                 { e with cpos = (fst e.cpos - 1, snd e.cpos) }
             else e
         | ConsoleKey.DownArrow ->
-            if snd e.cpos < e.visible.Length - 1 then
-                if fst e.cpos > e.visible[snd e.cpos + 1].Length then
+            if snd e.cpos < e.lines.Length - 1 then
+                if fst e.cpos > e.lines[snd e.cpos + 1].Length then
                     { e with cpos = (0, snd e.cpos + 1) }
                 else
                     { e with cpos = (fst e.cpos, snd e.cpos + 1) }
             else e
         | ConsoleKey.UpArrow ->
             if snd e.cpos > 0 then
-                if fst e.cpos > e.visible[snd e.cpos - 1].Length then
+                if fst e.cpos > e.lines[snd e.cpos - 1].Length then
                     { e with cpos = (0, snd e.cpos - 1) }
                 else
                 { e with cpos = (fst e.cpos, snd e.cpos - 1) }
             else e
         | ConsoleKey.RightArrow ->
-            if fst e.cpos < e.visible[snd e.cpos].Length then
+            if fst e.cpos < e.lines[snd e.cpos].Length then
                 { e with cpos = (fst e.cpos + 1, snd e.cpos) }
             else e
         // Saving and quitting. Work in progress
@@ -136,7 +137,7 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
         | ConsoleKey.I ->
             { e with mode = "insert" }
         | ConsoleKey.Enter ->
-            { e with visible = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.visible); cpos = (0, snd e.cpos + 1) }
+            { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.lines); cpos = (0, snd e.cpos + 1) }
         | _ -> e
     elif e.mode = "insert" then
         match k.Key with
@@ -145,47 +146,47 @@ let processKey (e: Editor) (k: ConsoleKeyInfo) (p: string) =
                 { e with cpos = (fst e.cpos - 1, snd e.cpos) }
             else e
         | ConsoleKey.DownArrow ->
-            if snd e.cpos < e.visible.Length - 1 then
-                if fst e.cpos > e.visible[snd e.cpos + 1].Length then
+            if snd e.cpos < e.lines.Length - 1 then
+                if fst e.cpos > e.lines[snd e.cpos + 1].Length then
                     { e with cpos = (0, snd e.cpos + 1) }
                 else
                     { e with cpos = (fst e.cpos, snd e.cpos + 1) }
             else e
         | ConsoleKey.UpArrow ->
             if snd e.cpos > 0 then
-                if fst e.cpos > e.visible[snd e.cpos - 1].Length then
+                if fst e.cpos > e.lines[snd e.cpos - 1].Length then
                     { e with cpos = (0, snd e.cpos - 1) }
                 else
                     { e with cpos = (fst e.cpos, snd e.cpos - 1) }
             else e
         | ConsoleKey.RightArrow ->
-            if fst e.cpos < e.visible[snd e.cpos].Length then
+            if fst e.cpos < e.lines[snd e.cpos].Length then
                 { e with cpos = (fst e.cpos + 1, snd e.cpos) }
             else e
         | ConsoleKey.Escape ->
             { e with mode = "normal" }
         | ConsoleKey.Enter ->
-            { e with visible = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.visible); cpos = (0, snd e.cpos + 1) }
+            { e with lines = List.insertAt (snd e.cpos + 1) (StringBuilder "") (e.lines); cpos = (0, snd e.cpos + 1) }
         | ConsoleKey.Backspace ->
-            let line = e.visible[snd e.cpos]
+            let line = e.lines[snd e.cpos]
 
             if fst e.cpos > 0 then
                 line.Remove((fst e.cpos) - 1, 1) |> ignore
 
-                { e with visible = listReplaceAt (snd e.cpos) line e.visible; cpos = (fst e.cpos - 1, snd e.cpos) }
+                { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = (fst e.cpos - 1, snd e.cpos) }
             elif fst e.cpos = 0 && snd e.cpos = 0 then e
             else
-                { e with visible = List.removeAt (snd e.cpos) e.visible; cpos = (e.visible[snd e.cpos - 1].Length, snd e.cpos - 1) }
+                { e with lines = List.removeAt (snd e.cpos) e.lines; cpos = (e.lines[snd e.cpos - 1].Length, snd e.cpos - 1) }
         | ConsoleKey.Tab ->
-            let line = e.visible[snd e.cpos]
+            let line = e.lines[snd e.cpos]
             line.Insert(fst e.cpos, "    ") |> ignore
 
-            { e with visible = listReplaceAt (snd e.cpos) line e.visible; cpos = (fst e.cpos + 4, snd e.cpos) }
+            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = (fst e.cpos + 4, snd e.cpos) }
         | _ ->
-            let line = e.visible[snd e.cpos]
+            let line = e.lines[snd e.cpos]
             line.Insert(fst e.cpos, k.KeyChar.ToString()) |> ignore
 
-            { e with visible = listReplaceAt (snd e.cpos) line e.visible; cpos = (fst e.cpos + 1, snd e.cpos) }
+            { e with lines = listReplaceAt (snd e.cpos) line e.lines; cpos = (fst e.cpos + 1, snd e.cpos) }
     else e
 
 [<EntryPoint>]
@@ -211,7 +212,7 @@ let main argv =
         let e: Editor = {
             cpos = (0, 0)
             mode = "normal"
-            visible = loadFile p
+            lines = loadFile p
             viewport = 0
             status = ""
         }
